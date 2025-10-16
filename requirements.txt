@@ -15,7 +15,7 @@ sentence-transformers>=2.2.0
 matplotlib>=3.7.0
 
 # Web Interface
-streamlit>=1.50.0
+gradio>=4.0.0
 
 # Development and Testing
 pytest>=7.4.0
