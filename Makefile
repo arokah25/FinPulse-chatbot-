@@ -19,7 +19,7 @@ help:
 setup: install-deps
 	@echo "Setting up FinPulse environment..."
 	@mkdir -p data/cache
-	@echo "✅ Environment setup complete!"
+	@echo "Environment setup complete!"
 	@echo ""
 	@echo "Next steps:"
 	@echo "1. Copy .env.example to .env and add your GEMINI_API_KEY"
@@ -30,13 +30,13 @@ setup: install-deps
 install-deps:
 	@echo "Installing Python dependencies..."
 	pip install -r requirements.txt
-	@echo "✅ Dependencies installed!"
+	@echo "Dependencies installed!"
 
 # Run CLI with example
 run-cli:
 	@echo "Running FinPulse CLI with AAPL 10-Q example..."
 	@if [ ! -f .env ]; then \
-		echo "⚠️  Warning: .env file not found. Using default settings."; \
+		echo "Warning: .env file not found. Using default settings."; \
 	fi
 	python -m finpulse --ticker AAPL --scope 10Q
 
@@ -44,7 +44,7 @@ run-cli:
 app:
 	@echo "Launching FinPulse web interface..."
 	@if [ ! -f .env ]; then \
-		echo "⚠️  Warning: .env file not found. Using default settings."; \
+		echo "Warning: .env file not found. Using default settings."; \
 	fi
 	python app/gradio_app.py
 
@@ -66,13 +66,13 @@ clean:
 	rm -rf finpulse.egg-info/
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@echo "✅ Cleanup complete!"
+	@echo "Cleanup complete!"
 
 # Development helpers
 dev-setup: setup
 	@echo "Setting up development environment..."
 	pip install -e .
-	@echo "✅ Development setup complete!"
+	@echo "Development setup complete!"
 
 # Quick test without full setup
 quick-test:
