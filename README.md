@@ -26,9 +26,8 @@ FinPulse demonstrates how LLMs can be applied responsibly in financial analytics
 - Pandas, NumPy  
 
 ---
-
 ## Societal Impact
-FinPulse delivers prompt‑driven, explainable financial analysis with transparent sources—built for accuracy, clarity, and responsible AI.
+Finpulse delivers prompt-drive, explainable financial analysis with transparent sources - built for accuracy, clarity, and responsible AI. 
 ---
 
 ## Team
