@@ -33,6 +33,7 @@ FinPulse aims to make financial insights more understandable and accessible to t
 ---
 
 ## Team
+Adam Rokah, Christoff Armann, Lavy Selvaraj
 
 ---
 
