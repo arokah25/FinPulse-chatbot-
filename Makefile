@@ -77,4 +77,4 @@ dev-setup: setup
 # Quick test without full setup
 quick-test:
 	@echo "Running quick test..."
-	python -c "import sys; sys.path.insert(0, 'src'); from finpulse.ingest.edgar import EdgarClient; print('✅ Import test passed!')"
+	python -c "import sys; sys.path.insert(0, 'src'); from finpulse.ingest.edgar import EdgarClient; print(' Import test passed!')"
