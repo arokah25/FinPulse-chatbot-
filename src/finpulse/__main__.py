@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from dotenv import load_dotenv
-from src.finpulse.report.generator import ReportGenerator
+from finpulse.report.generator import ReportGenerator
 
 # Load environment variables
 load_dotenv()

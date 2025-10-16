@@ -1,6 +1,7 @@
 """Gradio web interface for FinPulse."""
 
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -11,7 +12,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from dotenv import load_dotenv
-from src.finpulse.report.generator import ReportGenerator
+from finpulse.report.generator import ReportGenerator
 
 # Load environment variables
 load_dotenv()
@@ -226,9 +227,14 @@ def main():
 
 if __name__ == "__main__":
     app = main()
+    # Allow overriding via environment and auto-pick a free port if unspecified
+    env_port = os.getenv("GRADIO_SERVER_PORT")
+    server_port = int(env_port) if env_port else None
+    share_env = os.getenv("FINPULSE_SHARE", "0").lower()
+    share = share_env in ("1", "true", "yes", "on")
     app.launch(
         server_name="0.0.0.0",
-        server_port=7860,
-        share=False,
+        server_port=server_port,
+        share=share,
         show_error=True
     )

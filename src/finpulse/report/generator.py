@@ -7,10 +7,10 @@ from typing import Dict, List, Tuple
 
 from dotenv import load_dotenv
 
-from src.finpulse.ingest.edgar import EdgarClient
-from src.finpulse.llm.gemini import GeminiClient
-from src.finpulse.rag.indexer import DocumentIndexer
-from src.finpulse.utils.dates import get_most_recent_period
+from finpulse.ingest.edgar import EdgarClient
+from finpulse.llm.gemini import GeminiClient
+from finpulse.rag.indexer import DocumentIndexer
+from finpulse.utils.dates import get_most_recent_period
 
 # Load environment variables
 load_dotenv()
