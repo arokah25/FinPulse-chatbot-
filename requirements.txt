@@ -1,0 +1,19 @@
+# Core utilities
+requests
+python-dotenv
+pandas
+numpy
+tqdm
+
+# LLMs and RAG
+google-generativeai
+langchain
+chromadb
+sentence-transformers
+
+# Visualization (optional)
+matplotlib
+
+# Interface
+streamlit
+# gradio  # uncomment if you prefer Gradio over Streamlit
