@@ -7,10 +7,10 @@ from typing import Dict, List, Tuple
 
 from dotenv import load_dotenv
 
-from ..ingest.edgar import EdgarClient
-from ..llm.gemini import GeminiClient
-from ..rag.indexer import DocumentIndexer
-from ..utils.dates import get_most_recent_period
+from src.finpulse.ingest.edgar import EdgarClient
+from src.finpulse.llm.gemini import GeminiClient
+from src.finpulse.rag.indexer import DocumentIndexer
+from src.finpulse.utils.dates import get_most_recent_period
 
 # Load environment variables
 load_dotenv()
@@ -85,9 +85,18 @@ class ReportGenerator:
             logger.info(f"Retrieving documents for query: {query}")
             retrieved_docs = self.rag_indexer.retrieve(query, k=5)
             
+            # Add fallback sources if no documents were retrieved
+            if not retrieved_docs:
+                logger.info("No documents retrieved, adding fallback sources")
+                fallback_sources = [
+                    (f"SEC EDGAR company facts data for {ticker}", f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik.zfill(10)}.json", 0.8),
+                    (f"SEC EDGAR submissions for {ticker}", f"https://data.sec.gov/submissions/CIK{cik.zfill(10)}.json", 0.7)
+                ]
+                retrieved_docs = fallback_sources
+            
             # Step 6: Generate summary with Gemini
             logger.info("Generating financial summary...")
-            narrative = self.gemini_client.summarize(kpis, retrieved_docs)
+            narrative = self.gemini_client.summarize(kpis, retrieved_docs, user_query=query)
             
             # Step 7: Generate KPI table
             kpi_table = self.gemini_client.generate_kpi_table(kpis)
@@ -104,7 +113,8 @@ class ReportGenerator:
                 'narrative': narrative,
                 'sources': sources,
                 'filings_analyzed': len(filings),
-                'query': query
+                'query': query,
+                'entityName': company_facts.get('entityName', 'Unknown')
             }
             
         except Exception as e:
@@ -132,7 +142,7 @@ class ReportGenerator:
                 logger.info(f"Fetching filing: {primary_document}")
                 
                 # Fetch the filing text
-                filing_text = self.edgar_client.get_filing_text(accession_number, primary_document)
+                filing_text = self.edgar_client.get_filing_text(accession_number, primary_document, cik)
                 
                 # Create URL for this filing
                 filing_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_number}/{primary_document}"

@@ -9,7 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from dotenv import load_dotenv
-from report.generator import ReportGenerator
+from src.finpulse.report.generator import ReportGenerator
 
 # Load environment variables
 load_dotenv()
@@ -124,8 +124,8 @@ Examples:
                 print(f"[S{i}] {url} (relevance: {score:.3f})")
         
         print("\n" + "="*60)
-        print("⚠️  DISCLAIMER: This analysis is for informational purposes only.")
-        print("   Not intended as investment advice. Please consult a financial advisor.")
+        print("DISCLAIMER: This analysis is for informational purposes only.")
+        print("Not intended as investment advice. Please consult a financial advisor.")
         print("="*60)
         
     except KeyboardInterrupt:

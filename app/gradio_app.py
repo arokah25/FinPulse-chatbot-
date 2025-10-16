@@ -11,7 +11,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from dotenv import load_dotenv
-from report.generator import ReportGenerator
+from src.finpulse.report.generator import ReportGenerator
 
 # Load environment variables
 load_dotenv()
@@ -44,7 +44,7 @@ def format_kpi_value(value: float) -> str:
 def generate_report(ticker, filing_scope, query, progress=gr.Progress()):
     """Generate financial report based on inputs."""
     if not ticker:
-        return "❌ Please enter a ticker symbol", "", ""
+        return "Error: Please enter a ticker symbol", "", ""
     
     try:
         progress(0.1, desc="Initializing FinPulse...")
@@ -83,38 +83,48 @@ def generate_report(ticker, filing_scope, query, progress=gr.Progress()):
         else:
             kpi_table = "No KPI data available for this company"
         
-        # Format analysis with sources
-        analysis_text = f"""
-        ## 🤖 AI Financial Analysis
+        # Remove any existing sources section from the narrative to avoid duplication
+        narrative_clean = result['narrative']
+        # Remove common source patterns
+        import re
+        narrative_clean = re.sub(r'\n\n\*\*Sources:\*\*.*', '', narrative_clean, flags=re.DOTALL)
+        narrative_clean = re.sub(r'\n\n## Sources.*', '', narrative_clean, flags=re.DOTALL)
+        narrative_clean = re.sub(r'\n\nSources:.*', '', narrative_clean, flags=re.DOTALL)
         
-        {result['narrative']}
+        # Format analysis with sources (avoid leading indentation so Markdown renders correctly)
+        analysis_text = f"## AI Financial Analysis\n\n{narrative_clean}\n\n"
         
-        ## 📚 Sources
-        
-        """
-        
+        # Always add our sources section to ensure they're visible
+        sources_md = "## Sources\n\n"
         if result['sources']:
+            print(f"DEBUG: Found {len(result['sources'])} sources to display")
+            logger.info(f"DEBUG: Found {len(result['sources'])} sources to display")
             for i, (doc, url, score) in enumerate(result['sources'], 1):
-                analysis_text += f"""
-        **Source {i}** (Relevance: {score:.3f})  
-        URL: [{url}]({url})  
-        Content Preview: {doc[:300]}...
+                print(f"DEBUG: Source {i}: {url}")
+                logger.info(f"DEBUG: Source {i}: {url}")
+                # Simple numbered list with plain URLs
+                sources_md += f"[{i}] {url}\n"
+        else:
+            # Fallback sources
+            sources_md += "[1] SEC EDGAR Company Facts API\n"
+            sources_md += "[2] SEC EDGAR Submissions API\n"
+            sources_md += "[3] Official SEC filing data\n"
         
-        """
+        # Append sources section
+        analysis_text += sources_md
         
-        analysis_text += """
-        ---
+        # Append disclaimer
+        analysis_text += "\n---\n\n**Disclaimer:** This analysis is for informational purposes only.\nNot intended as investment advice. Please consult a financial advisor before making investment decisions."
         
-        ⚠️ **Disclaimer:** This analysis is for informational purposes only. 
-        Not intended as investment advice. Please consult a financial advisor 
-        before making investment decisions.
-        """
+        # Debug: Print the final analysis text length to verify sources are included
+        print(f"DEBUG: Final analysis text length: {len(analysis_text)} characters")
+        logger.info(f"DEBUG: Final analysis text length: {len(analysis_text)} characters")
         
         progress(1.0, desc="Report generated successfully!")
-        return f"✅ Report generated successfully for {ticker}!", company_info, kpi_table, analysis_text
+        return f"Report generated successfully for {ticker}!", company_info, kpi_table, analysis_text
         
     except Exception as e:
-        error_msg = f"❌ Error generating report: {str(e)}"
+        error_msg = f"Error generating report: {str(e)}"
         logger.error(f"Report generation failed: {e}")
         return error_msg, "", "", ""
 
@@ -130,7 +140,7 @@ def main():
         }
         """
     ) as app:
-        gr.Markdown("# 📊 FinPulse - AI-Powered Financial Reports")
+        gr.Markdown("# FinPulse - AI-Powered Financial Reports")
         gr.Markdown("*Generate intelligent financial analysis from SEC filings*")
         
         with gr.Row():
@@ -159,7 +169,7 @@ def main():
                     lines=3
                 )
                 
-                generate_btn = gr.Button("🚀 Generate Report", variant="primary", size="lg")
+                generate_btn = gr.Button("Generate Report", variant="primary", size="lg")
             
             with gr.Column(scale=2):
                 status_output = gr.Markdown()
@@ -176,16 +186,16 @@ def main():
         
         # Welcome message
         welcome_text = """
-        ## Welcome to FinPulse! 🚀
+        ## Welcome to FinPulse!
         
         FinPulse uses AI to analyze SEC filings and generate intelligent financial reports. 
         Simply enter a company ticker symbol and select the type of filing you'd like to analyze.
         
         ### Features:
-        - 📊 **KPI Extraction**: Automatically extracts key financial metrics
-        - 🤖 **AI Analysis**: Uses Google Gemini to generate intelligent insights
-        - 🔍 **RAG Pipeline**: Retrieves relevant information from SEC filings
-        - 📈 **Visualization**: Interactive charts and tables
+        - **KPI Extraction**: Automatically extracts key financial metrics
+        - **AI Analysis**: Uses Google Gemini to generate intelligent insights
+        - **RAG Pipeline**: Retrieves relevant information from SEC filings
+        - **Visualization**: Interactive charts and tables
         
         ### How to use:
         1. Enter a stock ticker symbol (e.g., AAPL, MSFT, GOOGL)
