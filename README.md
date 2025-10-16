@@ -28,8 +28,7 @@ FinPulse demonstrates how LLMs can be applied responsibly in financial analytics
 ---
 
 ## Societal Impact
-FinPulse aims to make financial insights more understandable and accessible to the public while emphasizing responsible AI practices, data reliability, and bias awareness.
-
+FinPulse delivers prompt‑driven, explainable financial analysis with transparent sources—built for accuracy, clarity, and responsible AI.
 ---
 
 ## Team
