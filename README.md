@@ -1,11 +1,9 @@
-# FinPulse 📊
+# FinPulse
 
 FinPulse is an AI-powered financial report generator that analyzes SEC filings to create intelligent, data-driven insights using Large Language Models (LLMs) and Retrieval-Augmented Generation (RAG).
 
-## 🚀 Quick Start
-
 ### Prerequisites
-- Python 3.8+
+- Python 3.10+
 - Google Gemini API key
 
 ### Installation
@@ -37,7 +35,7 @@ FinPulse is an AI-powered financial report generator that analyzes SEC filings t
    make app
    ```
 
-## 💡 Usage
+## Usage
 
 ### Command Line Interface
 ```bash
@@ -59,44 +57,42 @@ make app
 python app/gradio_app.py
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ### Core Components
 
-- **📥 Data Ingestion** (`src/finpulse/ingest/`)
+- ** Data Ingestion** (`src/finpulse/ingest/`)
   - SEC EDGAR API client
   - Company ticker → CIK mapping
   - Financial KPI extraction
 
-- **🔍 RAG Pipeline** (`src/finpulse/rag/`)
+- ** RAG Pipeline** (`src/finpulse/rag/`)
   - Document chunking and indexing
   - Vector embeddings with sentence-transformers
   - ChromaDB for similarity search
 
-- **🤖 LLM Integration** (`src/finpulse/llm/`)
+- ** LLM Integration** (`src/finpulse/llm/`)
   - Google Gemini for report generation
   - Structured prompts with citations
   - KPI table formatting
 
-- **📊 Report Generation** (`src/finpulse/report/`)
+- ** Report Generation** (`src/finpulse/report/`)
   - End-to-end pipeline orchestration
   - Report formatting and presentation
 
-- **🌐 Web Interface** (`app/`)
+- ** Web Interface** (`app/`)
   - Gradio-based interactive UI
   - Real-time report generation
   - Tabbed interface for organized results
 
 ### Key Features
 
-- ✅ **Automated KPI Extraction**: Revenues, Net Income, EPS, Cash, Debt
-- ✅ **RAG-Powered Analysis**: Retrieves relevant context from SEC filings
-- ✅ **AI-Generated Insights**: Professional financial summaries with citations
-- ✅ **Dual Interface**: CLI and web interface
-- ✅ **Caching**: Efficient data storage and retrieval
-- ✅ **Type Safety**: Full type hints and documentation
+-  **Automated KPI Extraction**: Revenues, Net Income, EPS, Cash, Debt
+-  **RAG-Powered Analysis**: Retrieves relevant context from SEC filings
+-  **AI-Generated Insights**: Professional financial summaries with citations
+-  **Dual Interface**: CLI and web interface
 
-## 📋 Environment Setup
+## Environment Setup
 
 ### Required Environment Variables
 
@@ -109,9 +105,6 @@ GEMINI_API_KEY=your_gemini_api_key_here
 # SEC EDGAR API User Agent (required for compliance)
 FINPULSE_USER_AGENT="FinPulse/1.0 (team@example.com)"
 
-# Optional: Custom directories
-CHROMA_DIR=data/cache/chroma
-CACHE_DIR=data/cache
 ```
 
 ### Getting API Keys
@@ -119,22 +112,7 @@ CACHE_DIR=data/cache
 1. **Google Gemini API**: Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. **SEC EDGAR**: Free, but requires proper User-Agent header
 
-## 🔧 Development
-
-### Project Structure
-```
-FinPulse-chatbot-/
-├── src/finpulse/          # Main package
-│   ├── ingest/            # SEC data ingestion
-│   ├── rag/               # Retrieval-Augmented Generation
-│   ├── llm/               # LLM integration
-│   ├── report/            # Report generation
-│   └── utils/             # Utility functions
-├── app/                   # Gradio web interface
-├── tests/                 # Test suite
-├── data/cache/            # Cached data
-└── Makefile              # Development commands
-```
+## Development
 
 ### Available Commands
 ```bash
@@ -155,7 +133,7 @@ make test
 make quick-test
 ```
 
-## 📊 Example Output
+## Example Output
 
 ```
 FINANCIAL REPORT: AAPL (10-Q)
@@ -186,12 +164,7 @@ Sources:
 [S2] https://www.sec.gov/Archives/edgar/data/320193/... (relevance: 0.845)
 ```
 
-## ⚠️ Important Notes
-
-### Rate Limiting & Compliance
-- **SEC EDGAR**: Respects rate limits (10 requests/second)
-- **User Agent**: Required for SEC compliance
-- **Caching**: Implements intelligent caching to reduce API calls
+## Important Notes
 
 ### Data Sources
 - **SEC EDGAR**: Official SEC filings (10-K, 10-Q)
@@ -203,23 +176,15 @@ Sources:
 - **Data Lag**: SEC filings may have reporting delays
 - **API Dependencies**: Requires stable internet connection
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
+## License
 
 MIT License © 2025 FinPulse Team
 
-## 👥 Team
+## Team
 
-- **Adam Rokah** - Lead Developer
-- **Christoff Armann** - Research & Development  
-- **Lavy Selvaraj** - UI/UX & Testing
+- **Adam Rokah**
+- **Christoff Armann**
+- **Lavy Selvaraj**
 
 ---
 
