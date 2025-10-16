@@ -21,7 +21,7 @@ FinPulse demonstrates how LLMs can be applied responsibly in financial analytics
 
 ## Tech Stack
 - Python  
-- LangChain / Hugging Face / OpenAI API  
+- LangChain / GEMINI API
 - Gradio  
 - Pandas, NumPy  
 
