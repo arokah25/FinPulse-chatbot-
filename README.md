@@ -52,11 +52,11 @@ python -m finpulse --ticker GOOGL --scope 10Q --query "revenue growth and profit
 ```
 
 ### Web Interface
-Launch the Streamlit app for an interactive experience:
+Launch the Gradio app for an interactive experience:
 ```bash
 make app
 # or
-streamlit run app/streamlit_app.py
+python app/gradio_app.py
 ```
 
 ## 🏗️ Architecture
@@ -81,6 +81,11 @@ streamlit run app/streamlit_app.py
 - **📊 Report Generation** (`src/finpulse/report/`)
   - End-to-end pipeline orchestration
   - Report formatting and presentation
+
+- **🌐 Web Interface** (`app/`)
+  - Gradio-based interactive UI
+  - Real-time report generation
+  - Tabbed interface for organized results
 
 ### Key Features
 
@@ -125,7 +130,7 @@ FinPulse-chatbot-/
 │   ├── llm/               # LLM integration
 │   ├── report/            # Report generation
 │   └── utils/             # Utility functions
-├── app/                   # Web interface
+├── app/                   # Gradio web interface
 ├── tests/                 # Test suite
 ├── data/cache/            # Cached data
 └── Makefile              # Development commands

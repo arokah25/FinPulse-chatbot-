@@ -40,13 +40,13 @@ run-cli:
 	fi
 	python -m finpulse --ticker AAPL --scope 10Q
 
-# Launch Streamlit web interface
+# Launch Gradio web interface
 app:
 	@echo "Launching FinPulse web interface..."
 	@if [ ! -f .env ]; then \
 		echo "⚠️  Warning: .env file not found. Using default settings."; \
 	fi
-	streamlit run app/streamlit_app.py
+	python app/gradio_app.py
 
 # Run tests
 test:
