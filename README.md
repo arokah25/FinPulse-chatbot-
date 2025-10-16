@@ -14,7 +14,7 @@ FinPulse demonstrates how LLMs can be applied responsibly in financial analytics
 - Company-specific financial report generation  
 - Retrieval-Augmented Generation (RAG) pipeline  
 - Integration with open-source or API-based LLMs (e.g., GPT, Gemini, Mistral)  
-- Simple chatbot or web app interface (Streamlit / Gradio)  
+- Simple chatbot or web app interface (Gradio)  
 
 ---
 
