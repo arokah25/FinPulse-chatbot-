@@ -193,64 +193,58 @@ class EdgarClient:
         
         return kpis
     
-    def extract_quarterly_revenue_from_filings(self, filings: List[Dict]) -> Dict[str, float]:
-        """Extract quarterly revenue data from 10-Q filing text.
+    def get_quarterly_revenue_from_xbrl(self, cik: str, limit: int = 3) -> Dict[str, float]:
+        """Get quarterly revenue data from SEC XBRL API.
         
         Args:
-            filings: List of filing dictionaries with text content
+            cik: Company CIK number
+            limit: Number of quarters to get
             
         Returns:
             Dictionary mapping period to revenue values
         """
         quarterly_revenues = {}
         
-        for filing in filings:
-            if 'text' not in filing:
-                logger.warning(f"No text found for filing {filing.get('primaryDocument', 'Unknown')}")
-                continue
-                
-            text = filing['text']
-            period = filing.get('reportDate', 'Unknown')
-            logger.info(f"Extracting revenue from filing {period} (length: {len(text)} chars)")
+        try:
+            # Get company facts which includes quarterly data
+            company_facts = self.get_company_facts(cik)
             
-            # Look for revenue patterns in the text
-            import re
+            if 'facts' not in company_facts or 'us-gaap' not in company_facts['facts']:
+                logger.warning("No US-GAAP facts found for quarterly revenue")
+                return quarterly_revenues
             
-            # Common revenue patterns in 10-Q filings (more comprehensive)
-            revenue_patterns = [
-                r'net sales[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
-                r'total revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
-                r'revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
-                r'net revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
-                r'sales[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
-                r'net sales[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
-                r'total revenue[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
-                r'revenue[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
-                r'sales[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
-                # Also try millions
-                r'net sales[:\s]*\$?([0-9,]+\.?[0-9]*)\s*million',
-                r'total revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*million',
-                r'revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*million'
-            ]
+            us_gaap = company_facts['facts']['us-gaap']
             
-            for pattern in revenue_patterns:
-                matches = re.findall(pattern, text, re.IGNORECASE)
-                if matches:
-                    # Take the first match (usually the most recent quarter)
-                    revenue_str = matches[0].replace(',', '')
-                    try:
-                        revenue_billions = float(revenue_str)
-                        if 'million' in pattern:
-                            quarterly_revenues[period] = revenue_billions * 1e6  # Convert millions to dollars
-                        else:
-                            quarterly_revenues[period] = revenue_billions * 1e9  # Convert billions to dollars
-                        logger.info(f"Found revenue for {period}: ${revenue_billions}B (pattern: {pattern})")
-                        break
-                    except ValueError:
-                        logger.warning(f"Could not parse revenue value: {revenue_str}")
-                        continue
-        
-        return quarterly_revenues
+            # Try different revenue field names
+            revenue_fields = ['Revenues', 'Revenue', 'SalesRevenueNet', 'NetSales']
+            
+            for field in revenue_fields:
+                if field in us_gaap:
+                    units = us_gaap[field].get('units', {})
+                    
+                    # Look for USD values
+                    if 'USD' in units:
+                        # Filter for 10-Q filings only
+                        q10_data = [item for item in units['USD'] if item.get('form', '').startswith('10-Q')]
+                        
+                        # Get the most recent quarters
+                        q10_data.sort(key=lambda x: x.get('end', ''), reverse=True)
+                        
+                        for item in q10_data[:limit]:
+                            period = item.get('end', 'Unknown')
+                            revenue_value = item.get('val', 0)
+                            if revenue_value > 0:
+                                quarterly_revenues[period] = revenue_value
+                        
+                        if quarterly_revenues:
+                            logger.info(f"Found quarterly revenue data for {len(quarterly_revenues)} quarters")
+                            break
+            
+            return quarterly_revenues
+            
+        except Exception as e:
+            logger.error(f"Failed to get quarterly revenue from XBRL: {e}")
+            return quarterly_revenues
     
     #def get_latest_filings(self, cik: str, form_type: str = "10-K", limit: int = 10) -> List[Dict]:
     def get_latest_filings(self, cik: str, form_type: str = "10-Q", limit: int = 10) -> List[Dict]:
