@@ -227,9 +227,9 @@ class EdgarClient:
                         # Filter for 10-Q filings only
                         q10_data = [item for item in units['USD'] if item.get('form', '').startswith('10-Q')]
                         
-                        # Filter for recent quarters (last 2 years)
+                        # Filter for recent quarters (last 24 months to ensure we get 3 quarters)
                         from datetime import datetime, timedelta
-                        cutoff_date = datetime.now() - timedelta(days=730)  # 2 years ago
+                        cutoff_date = datetime.now() - timedelta(days=730)  # ~24 months ago
                         
                         recent_q10_data = []
                         for item in q10_data:
@@ -271,6 +271,18 @@ class EdgarClient:
         Returns:
             Revenue value in dollars, or 0 if not found
         """
+        # Filter for recent quarters (last 24 months to ensure we get 3 quarters)
+        from datetime import datetime, timedelta
+        cutoff_date = datetime.now() - timedelta(days=730)  # ~24 months ago
+        
+        try:
+            filing_date = datetime.strptime(report_date, '%Y-%m-%d')
+            if filing_date < cutoff_date:
+                logger.info(f"Filing date {report_date} is too old, skipping text extraction")
+                return 0
+        except ValueError:
+            logger.warning(f"Could not parse filing date: {report_date}")
+            # Continue anyway if date parsing fails
         import re
         
         # Look for revenue patterns in the text
