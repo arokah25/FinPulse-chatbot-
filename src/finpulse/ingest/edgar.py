@@ -261,6 +261,59 @@ class EdgarClient:
             logger.error(f"Failed to get quarterly revenue from XBRL: {e}")
             return quarterly_revenues
     
+    def extract_revenue_from_filing_text(self, filing_text: str, report_date: str) -> float:
+        """Extract revenue from filing text using regex patterns.
+        
+        Args:
+            filing_text: The text content of the filing
+            report_date: The report date for this filing
+            
+        Returns:
+            Revenue value in dollars, or 0 if not found
+        """
+        import re
+        
+        # Look for revenue patterns in the text
+        revenue_patterns = [
+            # Apple-style: "Total net sales $94,036" (in millions) - more specific
+            r'Total net sales[:\s]*\$?\s*([0-9,]+\.?[0-9]*)\s*$',
+            # Look for the specific table format Apple uses with better number matching
+            r'Total net sales[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)',
+            # Simple fallback: any large number after "Total net sales"
+            r'Total net sales.*?([0-9]{2,3}(?:,[0-9]{3})+)',
+            # More general patterns
+            r'net sales[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*billion',
+            r'total revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*billion',
+            r'revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*billion',
+            # Also try millions
+            r'net sales[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*million',
+            r'total revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*million',
+            r'revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*million'
+        ]
+        
+        for pattern in revenue_patterns:
+            matches = re.findall(pattern, filing_text, re.IGNORECASE | re.MULTILINE)
+            if matches:
+                logger.info(f"Found revenue match with pattern: {pattern}")
+                logger.info(f"Matches: {matches}")
+                # Take the first match (usually the most recent quarter)
+                revenue_str = matches[0].replace(',', '')
+                try:
+                    revenue_value = float(revenue_str)
+                    if 'million' in pattern or 'Total net sales' in pattern:
+                        result = revenue_value * 1e6  # Convert millions to dollars
+                        logger.info(f"Extracted revenue: ${revenue_value}M = ${result/1e9:.2f}B")
+                        return result
+                    else:
+                        result = revenue_value * 1e9  # Convert billions to dollars
+                        logger.info(f"Extracted revenue: ${revenue_value}B = ${result/1e9:.2f}B")
+                        return result
+                except ValueError:
+                    logger.warning(f"Could not parse revenue value: {revenue_str}")
+                    continue
+        
+        return 0
+    
     #def get_latest_filings(self, cik: str, form_type: str = "10-K", limit: int = 10) -> List[Dict]:
     def get_latest_filings(self, cik: str, form_type: str = "10-Q", limit: int = 10) -> List[Dict]:
         """Get latest filings for a company.
