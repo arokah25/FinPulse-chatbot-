@@ -227,10 +227,25 @@ class EdgarClient:
                         # Filter for 10-Q filings only
                         q10_data = [item for item in units['USD'] if item.get('form', '').startswith('10-Q')]
                         
-                        # Get the most recent quarters
-                        q10_data.sort(key=lambda x: x.get('end', ''), reverse=True)
+                        # Filter for recent quarters (last 2 years)
+                        from datetime import datetime, timedelta
+                        cutoff_date = datetime.now() - timedelta(days=730)  # 2 years ago
                         
-                        for item in q10_data[:limit]:
+                        recent_q10_data = []
+                        for item in q10_data:
+                            end_date_str = item.get('end', '')
+                            if end_date_str:
+                                try:
+                                    end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+                                    if end_date >= cutoff_date:
+                                        recent_q10_data.append(item)
+                                except ValueError:
+                                    continue
+                        
+                        # Get the most recent quarters
+                        recent_q10_data.sort(key=lambda x: x.get('end', ''), reverse=True)
+                        
+                        for item in recent_q10_data[:limit]:
                             period = item.get('end', 'Unknown')
                             revenue_value = item.get('val', 0)
                             if revenue_value > 0:
