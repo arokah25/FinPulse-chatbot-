@@ -193,6 +193,65 @@ class EdgarClient:
         
         return kpis
     
+    def extract_quarterly_revenue_from_filings(self, filings: List[Dict]) -> Dict[str, float]:
+        """Extract quarterly revenue data from 10-Q filing text.
+        
+        Args:
+            filings: List of filing dictionaries with text content
+            
+        Returns:
+            Dictionary mapping period to revenue values
+        """
+        quarterly_revenues = {}
+        
+        for filing in filings:
+            if 'text' not in filing:
+                logger.warning(f"No text found for filing {filing.get('primaryDocument', 'Unknown')}")
+                continue
+                
+            text = filing['text']
+            period = filing.get('reportDate', 'Unknown')
+            logger.info(f"Extracting revenue from filing {period} (length: {len(text)} chars)")
+            
+            # Look for revenue patterns in the text
+            import re
+            
+            # Common revenue patterns in 10-Q filings (more comprehensive)
+            revenue_patterns = [
+                r'net sales[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
+                r'total revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
+                r'revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
+                r'net revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
+                r'sales[:\s]*\$?([0-9,]+\.?[0-9]*)\s*billion',
+                r'net sales[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
+                r'total revenue[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
+                r'revenue[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
+                r'sales[:\s]*\$([0-9,]+\.?[0-9]*)\s*B',
+                # Also try millions
+                r'net sales[:\s]*\$?([0-9,]+\.?[0-9]*)\s*million',
+                r'total revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*million',
+                r'revenue[:\s]*\$?([0-9,]+\.?[0-9]*)\s*million'
+            ]
+            
+            for pattern in revenue_patterns:
+                matches = re.findall(pattern, text, re.IGNORECASE)
+                if matches:
+                    # Take the first match (usually the most recent quarter)
+                    revenue_str = matches[0].replace(',', '')
+                    try:
+                        revenue_billions = float(revenue_str)
+                        if 'million' in pattern:
+                            quarterly_revenues[period] = revenue_billions * 1e6  # Convert millions to dollars
+                        else:
+                            quarterly_revenues[period] = revenue_billions * 1e9  # Convert billions to dollars
+                        logger.info(f"Found revenue for {period}: ${revenue_billions}B (pattern: {pattern})")
+                        break
+                    except ValueError:
+                        logger.warning(f"Could not parse revenue value: {revenue_str}")
+                        continue
+        
+        return quarterly_revenues
+    
     #def get_latest_filings(self, cik: str, form_type: str = "10-K", limit: int = 10) -> List[Dict]:
     def get_latest_filings(self, cik: str, form_type: str = "10-Q", limit: int = 10) -> List[Dict]:
         """Get latest filings for a company.

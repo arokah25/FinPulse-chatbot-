@@ -70,6 +70,41 @@ class ReportGenerator:
             # Step 3: Get latest filings
             logger.info(f"Fetching latest {form_type} filings...")
             filings = self.edgar_client.get_latest_filings(cik, form_type, limit=3)
+            
+            # Step 4: Extract quarterly revenue from filing text and add to KPIs
+            if filings:
+                logger.info("Extracting quarterly revenue from filing text...")
+                # Build document index to get filing text
+                documents = []
+                for filing in filings:
+                    try:
+                        filing_text = self.edgar_client.get_filing_text(
+                            filing['accessionNumber'], 
+                            filing['primaryDocument'], 
+                            cik
+                        )
+                        # Add text to filing data for revenue extraction
+                        filing['text'] = filing_text
+                        documents.append((filing_text, f"https://www.sec.gov/Archives/edgar/data/{cik}/{filing['accessionNumber'].replace('-', '')}/{filing['primaryDocument']}"))
+                    except Exception as e:
+                        logger.error(f"Failed to fetch filing text for {filing.get('primaryDocument', 'Unknown')}: {e}")
+                        continue
+                
+                # Extract quarterly revenues from filing text
+                quarterly_revenues = self.edgar_client.extract_quarterly_revenue_from_filings(filings)
+                
+                # Add quarterly revenue data to KPIs
+                if quarterly_revenues:
+                    # Calculate 9-month revenue (sum of last 3 quarters)
+                    total_9_month_revenue = sum(quarterly_revenues.values())
+                    if total_9_month_revenue > 0:
+                        kpis['Revenue_9_Months'] = {
+                            'value': total_9_month_revenue,
+                            'period': f"Last 3 quarters ({', '.join(sorted(quarterly_revenues.keys()))})",
+                            'form': '10-Q',
+                            'filed': 'Aggregated from quarterly filings'
+                        }
+                        logger.info(f"Added 9-month revenue: ${total_9_month_revenue/1e9:.2f}B")
 
             #----------------BUGFIX: prints sources correctly----------------------
             def helper_build_url_from_filings(cik: str, accession_number: str, primary_document: str) -> str:
@@ -94,7 +129,20 @@ class ReportGenerator:
             cache_key = f"{ticker}_{form_type}_{cik}"
             if cache_key not in self.processed_cache:
                 logger.info("Building document index...")
-                self._build_document_index(ticker, cik, filings)
+                if documents:
+                    metadata = []
+                    for filing in filings:
+                        metadata.append({
+                            'ticker': ticker,
+                            'cik': cik,
+                            'filing_date': filing.get('filingDate', 'Unknown'),
+                            'report_date': filing.get('reportDate', 'Unknown'),
+                            'form': filing.get('form', 'Unknown'),
+                            'accession_number': filing.get('accessionNumber', 'Unknown')
+                        })
+                    self.rag_indexer.index_documents(documents, metadata)
+                else:
+                    self._build_document_index(ticker, cik, filings)
                 self.processed_cache[cache_key] = True
             
             # Step 5: Retrieve relevant documents
