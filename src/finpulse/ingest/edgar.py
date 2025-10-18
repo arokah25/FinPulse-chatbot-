@@ -190,7 +190,7 @@ class EdgarClient:
         
         Args:
             cik: Company CIK number
-            form_type: Type of filing (10-K, 10-Q, etc.)
+            form_type: Type of filing (10-Q only)
             limit: Maximum number of filings to return
             
         Returns:

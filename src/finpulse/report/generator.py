@@ -43,7 +43,7 @@ class ReportGenerator:
         
         Args:
             ticker: Stock ticker symbol (e.g., 'AAPL')
-            form_type: Type of filing to analyze ('10-K' or '10-Q')
+            form_type: Type of filing to analyze ('10-Q' only)
             query: Query for document retrieval
             
         Returns:

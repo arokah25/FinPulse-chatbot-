@@ -26,9 +26,11 @@ def get_most_recent_period(filing_dates: List[str], max_age_days: int = 365) -> 
     for date_str in filing_dates:
         try:
             filing_date = datetime.strptime(date_str, "%Y-%m-%d")
+            # KEEP ONLY FILES FROM THE LAST YEAR
             if filing_date >= cutoff_date:
                 valid_dates.append(filing_date)
         except ValueError:
+            #LOG ERROR if date_str has the wrong format
             logger.warning(f"Invalid date format: {date_str}")
             continue
     
@@ -44,25 +46,13 @@ def is_quarterly_filing(form_type: str) -> bool:
     """Check if a filing type is quarterly.
     
     Args:
-        form_type: SEC form type (e.g., '10-Q', '10-K')
+        form_type: SEC form type (e.g., '10-Q')
         
     Returns:
         True if the form is quarterly, False otherwise
     """
     quarterly_forms = ['10-Q', '10-Q/A', '10-QSB', '10-QSB/A']
     return form_type in quarterly_forms
-
-def is_annual_filing(form_type: str) -> bool:
-    """Check if a filing type is annual.
-    
-    Args:
-        form_type: SEC form type (e.g., '10-K', '10-Q')
-        
-    Returns:
-        True if the form is annual, False otherwise
-    """
-    annual_forms = ['10-K', '10-K/A', '10-KSB', '10-KSB/A', '20-F', '20-F/A']
-    return form_type in annual_forms
 
 def get_filing_period_description(form_type: str, report_date: str) -> str:
     """Get a human-readable description of the filing period.
@@ -72,7 +62,7 @@ def get_filing_period_description(form_type: str, report_date: str) -> str:
         report_date: Report date string (YYYY-MM-DD)
         
     Returns:
-        Human-readable period description
+        Human-readable period description (e.g., "Q1 2024", "2024-03-01")
     """
     try:
         report_dt = datetime.strptime(report_date, "%Y-%m-%d")
@@ -81,8 +71,6 @@ def get_filing_period_description(form_type: str, report_date: str) -> str:
         
         if is_quarterly_filing(form_type):
             return f"Q{quarter} {year}"
-        elif is_annual_filing(form_type):
-            return f"FY {year}"
         else:
             return f"{year}-{report_dt.strftime('%m-%d')}"
             
@@ -93,7 +81,7 @@ def get_expected_filing_periods(form_type: str, current_year: int = None) -> Lis
     """Get expected filing periods for a given form type.
     
     Args:
-        form_type: SEC form type ('10-K' or '10-Q')
+        form_type: SEC form type ('10-Q')
         current_year: Year to generate periods for (defaults to current year)
         
     Returns:
@@ -104,8 +92,6 @@ def get_expected_filing_periods(form_type: str, current_year: int = None) -> Lis
     
     if form_type == '10-Q':
         return [f"Q{i} {current_year}" for i in range(1, 5)]
-    elif form_type == '10-K':
-        return [f"FY {current_year}"]
     else:
         return []
 

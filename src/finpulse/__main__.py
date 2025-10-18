@@ -29,7 +29,7 @@ def main():
         epilog="""
 Examples:
   python -m finpulse --ticker AAPL --scope 10Q
-  python -m finpulse --ticker MSFT --scope 10K
+  python -m finpulse --ticker MSFT --scope 10Q
   python -m finpulse --ticker GOOGL --scope 10Q --query "revenue growth and profitability"
         """
     )
@@ -42,9 +42,9 @@ Examples:
     
     parser.add_argument(
         '--scope',
-        choices=['10K', '10Q'],
+        choices=['10Q'],
         default='10Q',
-        help='Filing type to analyze (default: 10Q)'
+        help='Filing type to analyze (10Q only)'
     )
     
     parser.add_argument(

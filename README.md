@@ -42,8 +42,8 @@ FinPulse is an AI-powered financial report generator that analyzes SEC filings t
 # Generate quarterly report for Apple
 python -m finpulse --ticker AAPL --scope 10Q
 
-# Generate annual report for Microsoft
-python -m finpulse --ticker MSFT --scope 10K
+# Generate quarterly report for Microsoft
+python -m finpulse --ticker MSFT --scope 10Q
 
 # Custom analysis query
 python -m finpulse --ticker GOOGL --scope 10Q --query "revenue growth and profitability"
@@ -167,7 +167,7 @@ Sources:
 ## Important Notes
 
 ### Data Sources
-- **SEC EDGAR**: Official SEC filings (10-K, 10-Q)
+- **SEC EDGAR**: Official SEC filings (10-Q quarterly reports)
 - **Real-time**: Always fetches latest available data
 - **Transparency**: All sources are cited with direct links
 
