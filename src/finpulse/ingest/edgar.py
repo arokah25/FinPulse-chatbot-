@@ -28,6 +28,7 @@ HEADERS = {
 class EdgarClient:
     """Client for interacting with SEC EDGAR API."""
     
+    #accept cache directory
     def __init__(self, cache_dir: str = "data/cache"):
         """Initialize the EDGAR client.
         
@@ -35,6 +36,7 @@ class EdgarClient:
             cache_dir: Directory to cache downloaded data
         """
         self.cache_dir = Path(cache_dir)
+        #enusre directory exists
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.tickers_file = self.cache_dir / "company_tickers.json"
         
@@ -44,11 +46,14 @@ class EdgarClient:
         Returns:
             Dictionary mapping ticker symbols to CIK numbers
         """
-        # Try to load cached mapping first
+        # if cache file exists -> load it
         if self.tickers_file.exists():
             logger.info("Loading cached ticker mapping")
             try:
+                #open file at self.tickers_file for reading
                 with open(self.tickers_file, 'r') as f:
+                    #read entire file and pare it as JSON into phyton object
+                    #if file contains JSON object -> data will be dictionary
                     data = json.load(f)
                     return {item['ticker']: item['cik_str'] for item in data.values()}
             except Exception as e:
@@ -56,6 +61,7 @@ class EdgarClient:
         
         # Fallback to hardcoded common tickers
         logger.info("Using hardcoded ticker mapping for common companies")
+        #dictionary: tickers & CIKs
         common_tickers = {
             'AAPL': '0000320193',  # Apple Inc.
             'MSFT': '0000789019',  # Microsoft Corporation
@@ -89,13 +95,14 @@ class EdgarClient:
             'PLTR': '0001321655',  # Palantir Technologies Inc.
         }
         
-        # Cache the common tickers
+        # write the fallback mappting to disk for next time
         try:
             with open(self.tickers_file, 'w') as f:
                 json.dump(common_tickers, f)
         except Exception as e:
             logger.warning(f"Failed to cache tickers: {e}")
         
+        #return mapping either way
         return common_tickers
     
     def ticker_to_cik(self, ticker: str) -> Optional[str]:
@@ -107,10 +114,17 @@ class EdgarClient:
         Returns:
             CIK number as string, or None if not found
         """
+        #Upper cases ticker -> Mapping keys are upper case
         ticker = ticker.upper()
+        #calls helper that returns mapping (i.e. dictionaly of ticker -> CIK)
         tickers_map = self._get_tickers_mapping()
+        #look up the ticker in the dictionary & retunr the CIK string if exists
+        #if it dfoes not exist -> return None
         return tickers_map.get(ticker)
     
+
+
+    #return type -> Dictionary
     def get_company_facts(self, cik: str) -> Dict:
         """Fetch company facts (financial data) for a given CIK.
         
@@ -120,17 +134,27 @@ class EdgarClient:
         Returns:
             Dictionary containing company financial facts
         """
+        #builds companyfacts API URL, also ensure cik is 10 digits (including 0s)
         url = f"{SEC_BASE_URL}/api/xbrl/companyfacts/CIK{cik.zfill(10)}.json"
         
         try:
+            #HTTP GET request to SEC API -> asking the server for ressources
+            #asnwer from server: (OK or error) + content (HTML, JSON; image...)
+            #if server doesnt repsond within 30 sec -> raise error
+            #headers: key/value metadata: we set 1. user-agent (short string for identifaction)
+            #2. Accept-Encoding: gzip (we can handle compressed responses)
             response = requests.get(url, headers=HEADERS, timeout=30)
+            #rais error if HTTP status != 2xx (2xx=success)
             response.raise_for_status()
+            #parse JSON response into Python dictionary and return it
             return response.json()
             
         except requests.RequestException as e:
             logger.error(f"Failed to fetch company facts for CIK {cik}: {e}")
             raise
     
+    #extract kpis from company facts and create a dictionary of kpis
+    #input company facts: comes from self.edgar_client.get_company_facts(cik)
     def extract_kpis(self, company_facts: Dict) -> Dict[str, float]:
         """Extract key financial KPIs from company facts.
         
@@ -140,8 +164,11 @@ class EdgarClient:
         Returns:
             Dictionary of KPI names to latest values
         """
+
+        #initzialize container with APIs
         kpis = {}
         
+        #validates input structure, i.e. check if 'facts' & 'us-gaap' keys exist
         if 'facts' not in company_facts or 'us-gaap' not in company_facts['facts']:
             logger.warning("No US-GAAP facts found in company data")
             return kpis
@@ -212,6 +239,7 @@ class EdgarClient:
             #pulls the lsit availabe (10-Q, 8-K, etc...) in forms from JSON
             forms = data.get('filings', {}).get('recent', {}).get('form', [])
             for i, filing in enumerate(forms):
+                print(f"DEBUG_ filing_ {filing}")
                 if filing == form_type:
                     filing_data = {
                         'form': filing,
@@ -225,7 +253,7 @@ class EdgarClient:
                     if len(filings) >= limit:
                         break
             
-           # print(f"DEBUG in edgar.py- check data: {data}")
+            print(f"DEBUG in edgar.py- check filings: {filings}")
 
             # filing_data = {
             #         'form': form_type,
