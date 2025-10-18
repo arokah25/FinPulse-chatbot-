@@ -164,13 +164,31 @@ class EdgarClient:
                 # Prefer USD values, fall back to shares for EPS
                 preferred_unit = 'USD' if kpi_name != 'EarningsPerShareDiluted' else 'USD/shares'
                 
-                # Filter for 10-Q filings only
+                # Filter for 10-Q filings only with date filtering
                 def get_latest_10q_data(unit_data):
                     if not unit_data:
                         return None
-                    # Filter for 10-Q filings and get the most recent one
+                    
+                    # Filter for 10-Q filings only
                     q10_data = [item for item in unit_data if item.get('form', '').startswith('10-Q')]
-                    return q10_data[-1] if q10_data else None
+                    
+                    # Apply date filtering (last 24 months)
+                    from datetime import datetime, timedelta
+                    cutoff_date = datetime.now() - timedelta(days=730)  # ~24 months ago
+                    
+                    recent_q10_data = []
+                    for item in q10_data:
+                        end_date_str = item.get('end', '')
+                        if end_date_str:
+                            try:
+                                end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+                                if end_date >= cutoff_date:
+                                    recent_q10_data.append(item)
+                            except ValueError:
+                                continue
+                    
+                    # Return the most recent one
+                    return recent_q10_data[-1] if recent_q10_data else None
                 
                 if preferred_unit in units:
                     latest_data = get_latest_10q_data(units[preferred_unit])
