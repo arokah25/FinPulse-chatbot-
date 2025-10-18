@@ -38,7 +38,7 @@ run-cli:
 	@if [ ! -f .env ]; then \
 		echo "Warning: .env file not found. Using default settings."; \
 	fi
-	python -m finpulse --ticker AAPL --scope 10Q
+	python3 -m finpulse --ticker AAPL --scope 10Q
 
 # Launch Gradio web interface
 app:
@@ -46,12 +46,12 @@ app:
 	@if [ ! -f .env ]; then \
 		echo "Warning: .env file not found. Using default settings."; \
 	fi
-	python app/gradio_app.py
+	python3 app/gradio_app.py
 
 # Run tests
 test:
 	@echo "Running FinPulse tests..."
-	python -m pytest tests/ -v
+	python3 -m pytest tests/ -v
 
 # Clean cache and temporary files
 clean:
@@ -77,4 +77,4 @@ dev-setup: setup
 # Quick test without full setup
 quick-test:
 	@echo "Running quick test..."
-	python -c "import sys; sys.path.insert(0, 'src'); from finpulse.ingest.edgar import EdgarClient; print(' Import test passed!')"
+	python3 -c "import sys; sys.path.insert(0, 'src'); from finpulse.ingest.edgar import EdgarClient; print(' Import test passed!')"

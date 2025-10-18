@@ -71,9 +71,11 @@ Examples:
         
         # Generate report
         logger.info(f"Generating {args.scope} report for {args.ticker}")
+        # Convert CLI format (10Q) to SEC API format (10-Q)
+        form_type = args.scope.replace('10Q', '10-Q')
         result = generator.generate_report(
             ticker=args.ticker.upper(),
-            form_type=args.scope,
+            form_type=form_type,
             query=args.query
         )
         

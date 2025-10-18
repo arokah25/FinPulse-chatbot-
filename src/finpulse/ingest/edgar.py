@@ -163,16 +163,25 @@ class EdgarClient:
                 
                 # Prefer USD values, fall back to shares for EPS
                 preferred_unit = 'USD' if kpi_name != 'EarningsPerShareDiluted' else 'USD/shares'
+                
+                # Filter for 10-Q filings only
+                def get_latest_10q_data(unit_data):
+                    if not unit_data:
+                        return None
+                    # Filter for 10-Q filings and get the most recent one
+                    q10_data = [item for item in unit_data if item.get('form', '').startswith('10-Q')]
+                    return q10_data[-1] if q10_data else None
+                
                 if preferred_unit in units:
-                    latest_data = units[preferred_unit][-1] if units[preferred_unit] else None
+                    latest_data = get_latest_10q_data(units[preferred_unit])
                 elif 'USD' in units:
-                    latest_data = units['USD'][-1] if units['USD'] else None
+                    latest_data = get_latest_10q_data(units['USD'])
                 elif 'USD/shares' in units:
-                    latest_data = units['USD/shares'][-1] if units['USD/shares'] else None
+                    latest_data = get_latest_10q_data(units['USD/shares'])
                 else:
-                    # Take the first available unit
+                    # Take the first available unit and filter for 10-Q
                     first_unit = list(units.keys())[0] if units else None
-                    latest_data = units[first_unit][-1] if first_unit and units[first_unit] else None
+                    latest_data = get_latest_10q_data(units[first_unit]) if first_unit else None
                 
                 if latest_data:
                     kpis[kpi_name] = {
