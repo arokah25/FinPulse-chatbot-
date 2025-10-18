@@ -109,7 +109,7 @@ Examples:
                 else:
                     formatted_value = f"${value:.2f}"
                 
-                print(f"{kpi_name:30} {formatted_value:>15} ({period})")
+                print(f"{kpi_name:50} {formatted_value:>30} ({period})")
         else:
             print("No KPI data available")
         

@@ -82,7 +82,11 @@ def generate_report(ticker, query, filing_scope = "10-Q", progress=gr.Progress()
                 })
             
             kpi_df = pd.DataFrame(kpi_data)
-            kpi_table = kpi_df.to_markdown(index=False)
+            # Create a custom formatted table with wider columns
+            kpi_table = "| Metric | Value | Period | Filing | Filed |\n"
+            kpi_table += "|" + "|".join(["-" * 50, "-" * 25, "-" * 20, "-" * 10, "-" * 12]) + "|\n"
+            for _, row in kpi_df.iterrows():
+                kpi_table += f"| {row['Metric']:<48} | {row['Value']:>23} | {row['Period']:<18} | {row['Filing']:<8} | {row['Filed']:<10} |\n"
         else:
             kpi_table = "No KPI data available for this company"
         
@@ -100,16 +104,11 @@ def generate_report(ticker, query, filing_scope = "10-Q", progress=gr.Progress()
         # Always add our sources section to ensure they're visible
         sources_md = "## Sources\n\n"
         if result['sources']:
-            print(f"DEBUG: Found {len(result['sources'])} sources to display")
-            logger.info(f"DEBUG: Found {len(result['sources'])} sources to display")
+            logger.info(f"Found {len(result['sources'])} sources to display")
             for i, (doc, url, score) in enumerate(result['sources'], 1):
-                #print(f"DEBUG URL IN UI: {url}")
-                #print(f"DEBUG: Source {i}: {url}")
-                logger.info(f"DEBUG: Source {i}: {url}")
+                logger.info(f"Source {i}: {url}")
                 # Simple numbered list with plain URLs
-                #print(f"DEBUG: URL BEFORES SOURCES OUPUT: {url}")
                 sources_md += f"\n[{i}] {url}\n"
-                #print(f"DBEUG: {sources_md}")
         else:
             # Fallback sources
             sources_md += "[1] SEC EDGAR Company Facts API\n"
@@ -122,9 +121,8 @@ def generate_report(ticker, query, filing_scope = "10-Q", progress=gr.Progress()
         # Append disclaimer
         analysis_text += "\n---\n\n**Disclaimer:** This analysis is for informational purposes only.\nNot intended as investment advice. Please consult a financial advisor before making investment decisions."
         
-        # Debug: Print the final analysis text length to verify sources are included
-        print(f"DEBUG: Final analysis text length: {len(analysis_text)} characters")
-        logger.info(f"DEBUG: Final analysis text length: {len(analysis_text)} characters")
+        # Log the final analysis text length to verify sources are included
+        logger.info(f"Final analysis text length: {len(analysis_text)} characters")
         
         progress(1.0, desc="Report generated successfully!")
         return f"Report generated successfully for {ticker}!", company_info, kpi_table, analysis_text
@@ -160,15 +158,6 @@ def main():
                     value="AAPL"
                 )
                 
-                #BUGFIX: only use 10-Q
-                # filing_scope = gr.Dropdown(
-                #     #choices=["10-Q", "10-K"],
-                #     choices=["10-Q"],
-                #     label="Filing Type",
-                #     #info="10-Q for quarterly reports, 10-K for annual reports",
-                #     info="10-Q for quarterly reports",
-                #     value="10-Q"
-                # )
                 
                 query_input = gr.Textbox(
                     label="Analysis Query",
@@ -226,8 +215,6 @@ def main():
         # Set up the generate button click handler
         generate_btn.click(
             fn=generate_report,
-            #BUGFIX: only use 10-Q
-            #inputs=[ticker_input, filing_scope, query_input],
             inputs=[ticker_input, query_input],
             outputs=[status_output, company_info_output, kpi_table_output, analysis_output],
             show_progress=True

@@ -33,7 +33,14 @@ class ReportGenerator:
         # Initialize components
         self.edgar_client = EdgarClient(cache_dir)
         self.rag_indexer = DocumentIndexer(self.chroma_dir)
-        self.gemini_client = GeminiClient()
+        
+        # Initialize Gemini client with error handling
+        try:
+            self.gemini_client = GeminiClient()
+            logger.info("Gemini client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini client: {e}")
+            raise
         
         # Cache for processed tickers
         self.processed_cache = {}
@@ -107,7 +114,7 @@ class ReportGenerator:
                     }
                     logger.info(f"Added {len(quarterly_revenues)}-quarter revenue: ${total_9_month_revenue/1e9:.2f}B")
 
-            #----------------BUGFIX: prints sources correctly----------------------
+            # Build sources from filings for display
             def helper_build_url_from_filings(cik: str, accession_number: str, primary_document: str) -> str:
                 acc = accession_number.replace("-", "")
                 return f"https://www.sec.gov/Archives/edgar/data/{cik}/{acc}/{primary_document}"
@@ -119,7 +126,6 @@ class ReportGenerator:
                 display_sources.append((label, url, 1.0))
 
             sources = display_sources
-            #-------------------------------------------------------------------
 
 
             
@@ -153,34 +159,6 @@ class ReportGenerator:
             # Step 7: Generate KPI table
             kpi_table = self.gemini_client.generate_kpi_table(kpis)
             
-            # Prepare sources
-            #BUGFIX: prints sources correctly
-            #sources = [(doc, url, score) for doc, url, score in retrieved_docs]
-            #retrieved_sources = [(doc, url, score) for doc, url, score in retrieved_docs]
-
-            
-            for i, (_, url, _) in enumerate(sources,1):
-                print(f"DEBOUG SOURCES IN GENERATE REPORT, source {i}: {url}")
-
-            #-------------------------------------------------------------------
-            
-            # #BUGFIX URL
-            # new_sources = []
-            # for i, (doc, url, score) in enumerate(sources,1):
-            #     url_splitted = url.split('/')
-            #     #print(url_splitted)
-            #     url_splitted[-2] = url_splitted[-2].replace('-', '')
-            #     #print(url_splitted[-2])
-            #     new_url = "/".join(url_splitted)
-            #     #print(f"REASSAMBLED URL: {url}")
-            #     new_sources.append((doc, new_url, score))
-            # sources = new_sources
-            
-            # #BUGFIX 
-            # for i, (_, url, _) in enumerate(sources,1):
-            #     print(f"DEBOUG SOURCES IN GENERATE REPORT, source {i}: {url}")
-            
-            #-------------------------------------------------------------------
 
 
             return {
@@ -223,15 +201,11 @@ class ReportGenerator:
                 # Fetch the filing text
                 filing_text = self.edgar_client.get_filing_text(accession_number, primary_document, cik)
                 
-                # BUGFIX
                 # Convert accession number to URL format (remove dashes)
                 accession_clean = accession_number.replace('-', '')
 
-
                 # Create URL for this filing
                 filing_url = f"https://www.sec.gov/Archives/edgar/data/{cik}/{accession_clean}/{primary_document}"
-                #print(f"generator.py:  DEBUG FILING URL = {filing_url}")
-                #print(f"URL DISPLAYED ERROR = {filing_url}")
                 documents.append((filing_text, filing_url))
                 metadata.append({
                     'ticker': ticker,

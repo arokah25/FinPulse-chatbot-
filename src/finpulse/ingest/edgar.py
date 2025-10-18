@@ -44,11 +44,14 @@ class EdgarClient:
         Returns:
             Dictionary mapping ticker symbols to CIK numbers
         """
-        # Try to load cached mapping first
+        # if cache file exists -> load it
         if self.tickers_file.exists():
             logger.info("Loading cached ticker mapping")
             try:
+                #open file at self.tickers_file for reading
                 with open(self.tickers_file, 'r') as f:
+                    #read entire file and pare it as JSON into phyton object
+                    #if file contains JSON object -> data will be dictionary
                     data = json.load(f)
                     return {item['ticker']: item['cik_str'] for item in data.values()}
             except Exception as e:
@@ -56,6 +59,7 @@ class EdgarClient:
         
         # Fallback to hardcoded common tickers
         logger.info("Using hardcoded ticker mapping for common companies")
+        #dictionary: tickers & CIKs
         common_tickers = {
             'AAPL': '0000320193',  # Apple Inc.
             'MSFT': '0000789019',  # Microsoft Corporation
@@ -89,13 +93,13 @@ class EdgarClient:
             'PLTR': '0001321655',  # Palantir Technologies Inc.
         }
         
-        # Cache the common tickers
+       # write the fallback mappting to disk for next time
         try:
             with open(self.tickers_file, 'w') as f:
                 json.dump(common_tickers, f)
         except Exception as e:
             logger.warning(f"Failed to cache tickers: {e}")
-        
+        #return mapping either way
         return common_tickers
     
     def ticker_to_cik(self, ticker: str) -> Optional[str]:
@@ -107,8 +111,12 @@ class EdgarClient:
         Returns:
             CIK number as string, or None if not found
         """
+        #Upper cases ticker -> Mapping keys are upper case
         ticker = ticker.upper()
+        #calls helper that returns mapping (i.e. dictionaly of ticker -> CIK)
         tickers_map = self._get_tickers_mapping()
+        #look up the ticker in the dictionary & retunr the CIK string if exists
+        #if it dfoes not exist -> return None
         return tickers_map.get(ticker)
     
     def get_company_facts(self, cik: str) -> Dict:
@@ -123,14 +131,22 @@ class EdgarClient:
         url = f"{SEC_BASE_URL}/api/xbrl/companyfacts/CIK{cik.zfill(10)}.json"
         
         try:
+            #HTTP GET request to SEC API -> asking the server for ressources
+            #asnwer from server: (OK or error) + content (HTML, JSON; image...)
+            #if server doesnt repsond within 30 sec -> raise error
+            #headers: key/value metadata: we set 1. user-agent (short string for identifaction)
+            #2. Accept-Encoding: gzip (we can handle compressed responses)
             response = requests.get(url, headers=HEADERS, timeout=30)
+            #rais error if HTTP status != 2xx (2xx=success)
             response.raise_for_status()
+            #parse JSON response into Python dictionary and return it
             return response.json()
             
         except requests.RequestException as e:
             logger.error(f"Failed to fetch company facts for CIK {cik}: {e}")
             raise
-    
+    #extract kpis from company facts and create a dictionary of kpis
+    #input company facts: comes from self.edgar_client.get_company_facts(cik)
     def extract_kpis(self, company_facts: Dict) -> Dict[str, float]:
         """Extract key financial KPIs from company facts.
         
@@ -140,15 +156,16 @@ class EdgarClient:
         Returns:
             Dictionary of KPI names to latest values
         """
+        #initzialize container with APIs
         kpis = {}
-        
+        #validates input structure, i.e. check if 'facts' & 'us-gaap' keys exist
         if 'facts' not in company_facts or 'us-gaap' not in company_facts['facts']:
             logger.warning("No US-GAAP facts found in company data")
             return kpis
         
         us_gaap = company_facts['facts']['us-gaap']
         
-        # Define KPI mappings
+        # Define KPI mappings (what should be pulled)
         kpi_mappings = {
             'Revenues': 'Revenues',
             'NetIncomeLoss': 'NetIncomeLoss', 
@@ -157,20 +174,28 @@ class EdgarClient:
             'LongTermDebtNoncurrent': 'LongTermDebtNoncurrent'
         }
         
+        # iterate oeach KPI that should be extracted
         for kpi_name, sec_name in kpi_mappings.items():
+            #only contiue if that concept exists for this company
+            #sec_name = key used to fetch that concept's data from SEC facts. e.g. us_gaap['Revenues']
             if sec_name in us_gaap:
                 units = us_gaap[sec_name].get('units', {})
                 
-                # Prefer USD values, fall back to shares for EPS
+                # unit for KPIs: USD, except for EPS which is USD/shares
                 preferred_unit = 'USD' if kpi_name != 'EarningsPerShareDiluted' else 'USD/shares'
                 
-                # Filter for 10-Q filings only with date filtering
+                # Filter for 10-Q filings only
+                #helper function
                 def get_latest_10q_data(unit_data):
+                    #if unit_data is None or []
                     if not unit_data:
                         return None
                     
                     # Filter for 10-Q filings only
-                    q10_data = [item for item in unit_data if item.get('form', '').startswith('10-Q')]
+                    #lsit comprehension: builds new list by scanning every item in unit_data
+                    #safeöy tries to read "form" key from the dictioanry; empty string if its missing
+                    q10_data = [item for item in unit_data if item.get('form', '').startswith('10-Q')] #retursn false for 10-K
+                    #last elemeent because "company_facts" lists are chronologically ordered from oldest->newest
                     
                     # Apply date filtering (last 24 months)
                     from datetime import datetime, timedelta
@@ -190,18 +215,25 @@ class EdgarClient:
                     # Return the most recent one
                     return recent_q10_data[-1] if recent_q10_data else None
                 
+                #if preferred unit exists in units -> grab that facts for revenues (or USD/shares facts for EPS)
+                #pass it to helper, keeps only 10-Q facts, returns most recent one
                 if preferred_unit in units:
                     latest_data = get_latest_10q_data(units[preferred_unit])
+                #fallbakc 1: tries USD series, all the values reported in USD for that concept
                 elif 'USD' in units:
                     latest_data = get_latest_10q_data(units['USD'])
+                #Fallback 2: if neither preferred nor USD exists, try USD/shares (for EPS)
                 elif 'USD/shares' in units:
                     latest_data = get_latest_10q_data(units['USD/shares'])
                 else:
                     # Take the first available unit and filter for 10-Q
+                    # I.e. if no USD or USD/shares, just take whatever is there
                     first_unit = list(units.keys())[0] if units else None
                     latest_data = get_latest_10q_data(units[first_unit]) if first_unit else None
                 
+
                 if latest_data:
+                    #store key KPI data into output dictionary
                     kpis[kpi_name] = {
                         'value': latest_data['val'],
                         'period': latest_data.get('end', ''),
@@ -385,21 +417,7 @@ class EdgarClient:
                     if len(filings) >= limit:
                         break
             
-           # print(f"DEBUG in edgar.py- check data: {data}")
 
-            # filing_data = {
-            #         'form': form_type,
-            #         'filingDate': data['filings']['recent']['filingDate'][i],
-            #         'reportDate': data['filings']['recent']['reportDate'][i],
-            #         'accessionNumber': data['filings']['recent']['accessionNumber'][i],
-            #         'primaryDocument': data['filings']['recent']['primaryDocument'][i]
-            #     }
-            # filings.append(filing_data)
-                
-    
-            
-
-            
             return filings
             
         except requests.RequestException as e:
@@ -423,16 +441,8 @@ class EdgarClient:
         # Extract CIK from accession number if not provided
         if cik is None:
             cik = accession_clean[:10]
-        #print(f"SEC_BASE_URL = {SEC_BASE_URL}")
-        # print(f"cik = {cik}")
-        # print(f"accession_clean = {accession_clean}")
-        # print(f"primary_document = {primary_document}")
-        #url = f"{SEC_BASE_URL}/Archives/edgar/data/{cik}/{accession_number}/{primary_document}"
-        #url = f"{SEC_BASE_URL}/Archives/edgar/data/{cik}/{accession_clean}/{primary_document}"
-
-        #BUGFIX: we need to use SEC_ARCHIVES here instead of SEC_BASE_URL
+        # Use SEC_ARCHIVES for filing text URLs (not SEC_BASE_URL)
         url = f"{SEC_ARCHIVES}/Archives/edgar/data/{cik}/{accession_clean}/{primary_document}"
-        #print(f"url CORRECT = {url}")
         try:
             response = requests.get(url, headers=HEADERS, timeout=60)
             response.raise_for_status()

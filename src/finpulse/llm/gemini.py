@@ -26,7 +26,8 @@ class GeminiClient:
             raise ValueError("GEMINI_API_KEY environment variable is required")
         
         genai.configure(api_key=self.api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Use the correct model name with full path
+        self.model = genai.GenerativeModel('models/gemini-2.0-flash')
     
     def summarize(self, kpis: Dict[str, Dict], sources: List[Tuple[str, str, float]], user_query: str = "latest quarterly performance") -> str:
         """Generate a financial summary using KPIs and retrieved sources.
@@ -90,6 +91,7 @@ Financial Analysis Response:
         try:
             response = self.model.generate_content(prompt)
             summary = response.text.strip()
+            logger.info("Successfully generated financial summary with Gemini")
             
             # Add source URLs at the end
             if source_citations:
@@ -102,10 +104,12 @@ Financial Analysis Response:
             
         except Exception as e:
             logger.error(f"Failed to generate summary with Gemini: {e}")
+            
             # Fallback summary
             fallback = f"Analysis for query: '{user_query}'\n\n"
             fallback += f"Based on {len(kpis)} key metrics and {len(sources)} relevant documents. "
             fallback += "Key metrics include revenue, net income, and cash position. "
+            fallback += f"\n\n⚠️ **Note**: AI analysis unavailable due to API error: {str(e)[:100]}..."
             fallback += "Please refer to the source documents for detailed analysis."
             return fallback
     
