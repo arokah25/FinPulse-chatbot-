@@ -91,45 +91,6 @@ class ReportGenerator:
             #get latest 3 quarterly filings
             filings = self.edgar_client.get_latest_filings(cik, form_type, limit=3)
             
-            # Step 4: Get quarterly revenue 
-            # try xbrl first -> might be empty!
-            logger.info("Getting quarterly revenue from XBRL API...")
-            quarterly_revenues = self.edgar_client.get_quarterly_revenue_from_xbrl(cik, limit=3)
-            
-            # Fallback if xbrl is empty (which it often is for 10-Q revenue), try extracting from filing text
-            if not quarterly_revenues and filings:
-                logger.info("No XBRL revenue data found, trying text extraction...")
-                for filing in filings[:3]:  # Try last 3 filings
-                    try:
-                        filing_text = self.edgar_client.get_filing_text(
-                            filing['accessionNumber'], 
-                            filing['primaryDocument'], 
-                            cik
-                        )
-                        report_date = filing.get('reportDate', 'Unknown')
-                        #TEST TO SIMPLIFY
-                        #revenue_value = self.edgar_client.extract_revenue_from_filing_text(filing_text, report_date)
-                        revenue_value = self.edgar_client.extract_revenue_from_filing_text(filing_text)#, report_date)
-                        if revenue_value > 0:
-                            quarterly_revenues[report_date] = revenue_value
-                            logger.info(f"Found revenue from text: ${revenue_value/1e9:.2f}B for {report_date}")
-                    except Exception as e:
-                        logger.warning(f"Failed to extract revenue from filing text: {e}")
-                        continue
-            
-            # Add quarterly revenue data to KPIs
-            if quarterly_revenues:
-                # Calculate 9-month revenue (sum of last 3 quarters)
-                total_9_month_revenue = sum(quarterly_revenues.values())
-                if total_9_month_revenue > 0:
-                    kpis['Revenue_9_Months'] = {
-                        'value': total_9_month_revenue,
-                        'period': f"Last {len(quarterly_revenues)} quarters ({', '.join(sorted(quarterly_revenues.keys()))})",
-                        'form': '10-Q',
-                        'filed': 'From SEC XBRL data and filing text'
-                    }
-                    logger.info(f"Added {len(quarterly_revenues)}-quarter revenue: ${total_9_month_revenue/1e9:.2f}B")
-
             # Build sources from filings for display
             def helper_build_url_from_filings(cik: str, accession_number: str, primary_document: str) -> str:
                 acc = accession_number.replace("-", "")
