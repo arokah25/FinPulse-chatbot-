@@ -214,4 +214,4 @@ class ReportGenerator:
             logger.warning("No documents to index")
     
 
- #----------------------------------------Adam-----------------------------------------------------------
+ 

@@ -25,7 +25,7 @@ if not existence_check:
     raise RuntimeError("Missing required environmental variable FINPULSE_USER_AGENT. Needed for compliance reasons\n" \
     "Following the structure: FINPULSE_USER_AGENT=\"FinPulse/1.0 (Name; email address)\"")
 
-# Reads .env file -> BUGFIX NECESSARY: abort everything if .env is missing, must comply with SEC.gov's Privacy and Security Policy
+# Reads .env file 
 USER_AGENT = os.getenv("FINPULSE_USER_AGENT", "FinPulse/1.0 (team@example.com)")
 
 
