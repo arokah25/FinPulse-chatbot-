@@ -134,7 +134,7 @@ MIT License © 2025 FinPulse Team
 ## Team
 
 - **Adam Rokah**
-- **Christoff Armann**
+- **Christoph Armann**
 - **Lavy Selvaraj**
 
 ---
