@@ -1,0 +1,11 @@
+# Core utilities
+requests>=2.31.0
+python-dotenv>=1.0.0
+pandas>=2.0.0
+
+# LLMs and RAG
+google-generativeai>=0.1.0rc1
+langchain>=0.3.0
+
+# Web Interface
+gradio>=4.0.0
