@@ -2,8 +2,7 @@
 SEC API Client & Data Fetcher
 Fetches company data from SEC EDGAR API
 Converts tickers to CIK numbers
-Downloads 10-Q filings and extracts financial metrics (revenue, net income, etc.)
-Parses filing text with regex to find revenue data
+Downloads 10-Q filings and extracts financial metrics (net income, EPS, cash, debt, etc.)
 """
 
 import json
@@ -140,12 +139,11 @@ class EdgarClient:
             logger.warning("No US-GAAP facts found in company data")
             return kpis
         # US GAAP = U.S. Generally Accepted Accounting Principles
-        # contains relevant numbers like revenues, net income, EPS, debt, cash,...
+        # contains relevant numbers like net income, EPS, debt, cash,...
         us_gaap = company_facts['facts']['us-gaap']
         
         # Define KPI mappings (what should be pulled)
         kpi_mappings = { #it maps the desired KPI names to SEC concept names
-            'Revenues': 'Revenues',
             'NetIncomeLoss': 'NetIncomeLoss', 
             'EarningsPerShareDiluted': 'EarningsPerShareDiluted',
             'CashAndCashEquivalentsAtCarryingValue': 'CashAndCashEquivalentsAtCarryingValue',
@@ -154,7 +152,7 @@ class EdgarClient:
         
         # iterate oeach KPI that should be extracted -> unpacks each pair of kpi_mappings into variables kpi_name and sec_name
         for kpi_name, sec_name in kpi_mappings.items():
-            #only contiue if that concept (e.g. Revenues) exists for this company
+            #only contiue if that concept (e.g. NetIncomeLoss) exists for this company
             if sec_name in us_gaap:
                 units = us_gaap[sec_name].get('units', {})
                 
@@ -195,7 +193,7 @@ class EdgarClient:
                     return recent_q10_data[-1] if recent_q10_data else None
                 
 
-                #if preferred unit exists in units -> grab that facts for revenues (or USD/shares facts for EPS)
+                #if preferred unit exists in units -> grab that facts for KPIs (or USD/shares facts for EPS)
                 #pass it to helper, keeps only 10-Q facts, returns most recent one
                 if preferred_unit in units:
                     latest_data = get_latest_10q_data(units[preferred_unit])
@@ -226,68 +224,6 @@ class EdgarClient:
 
 
     
-    #similar as method above but now looking for different revenue names for a specific compan, inputs:cik, possible: limit of quarters, output: dictionary of quarterly revenues
-    def get_quarterly_revenue_from_xbrl(self, cik: str, limit: int = 3) -> Dict[str, float]:
-        quarterly_revenues = {}
-        
-        try:
-            # Get company facts which includes quarterly data
-            company_facts = self.get_company_facts(cik)
-            
-            if 'facts' not in company_facts or 'us-gaap' not in company_facts['facts']:
-                logger.warning("No US-GAAP facts found for quarterly revenue")
-                return quarterly_revenues
-            
-            us_gaap = company_facts['facts']['us-gaap']
-            
-            # Try different revenue field names
-            revenue_fields = ['Revenues', 'Revenue', 'SalesRevenueNet', 'NetSales']
-            
-            for field in revenue_fields:
-                if field in us_gaap:
-                    units = us_gaap[field].get('units', {})
-                    
-                    # Look for USD values
-                    if 'USD' in units:
-                        # Filter for 10-Q filings only
-                        q10_data = [item for item in units['USD'] if item.get('form', '').startswith('10-Q')]
-                        
-                        # Filter for recent quarters (last 24 months to ensure we get 3 quarters)
-                        from datetime import datetime, timedelta
-                        cutoff_date = datetime.now() - timedelta(days=730)  # ~24 months ago
-                        
-                        recent_q10_data = []
-                        for item in q10_data:
-                            end_date_str = item.get('end', '')
-                            if end_date_str:
-                                try:
-                                    end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-                                    if end_date >= cutoff_date:
-                                        recent_q10_data.append(item)
-                                except ValueError:
-                                    continue
-                        
-                        # Get the most recent quarters
-                        recent_q10_data.sort(key=lambda x: x.get('end', ''), reverse=True)
-                        
-                        for item in recent_q10_data[:limit]:
-                            period = item.get('end', 'Unknown')
-                            revenue_value = item.get('val', 0)
-                            if revenue_value > 0:
-                                quarterly_revenues[period] = revenue_value
-                        
-                        if quarterly_revenues:
-                            logger.info(f"Found quarterly revenue data for {len(quarterly_revenues)} quarters")
-                            break
-            
-            return quarterly_revenues
-            
-        except Exception as e:
-            logger.error(f"Failed to get quarterly revenue from XBRL: {e}")
-            return quarterly_revenues
-        
-    
-
     #method get recents 10-Q filings; input: cik, output list of filing dictionaries
     def get_latest_filings(self, cik: str, form_type: str = "10-Q", limit: int = 10) -> List[Dict]:
         #builds URL, and makes sure CIK is 10 digits long inclduing leading zeros
@@ -359,57 +295,3 @@ class EdgarClient:
 
 
 
-    
-    #def extract_revenue_from_filing_text(self, filing_text: str, report_date: str) -> float:
-    def extract_revenue_from_filing_text(self, filing_text: str):#, report_date: str) -> float:
-
-        import re
-        
-
-        # Look for revenue patterns in the text
-        revenue_patterns = [
-            # Apple-style: "Total net sales $94,036" (in millions) - more specific
-            r'Total net sales[:\s]*\$?\s*([0-9,]+\.?[0-9]*)\s*$',
-            # Look for the specific table format Apple uses with better number matching
-            r'Total net sales[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)',
-            # Simple fallback: any large number after "Total net sales"
-            r'Total net sales.*?([0-9]{2,3}(?:,[0-9]{3})+)',
-            # More general patterns
-            r'net sales[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*billion',
-            r'total revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*billion',
-            r'revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*billion',
-            # Also try millions
-            r'net sales[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*million',
-            r'total revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*million',
-            r'revenue[:\s]*\$?\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]+)?)\s*million'
-        ]
-        
-
-        #try all of the patterns above until one matches
-        for pattern in revenue_patterns:
-            #list with all matches for the current pattern
-            matches = re.findall(pattern, filing_text, re.IGNORECASE | re.MULTILINE)
-            if matches:
-                logger.info(f"Found revenue match with pattern: {pattern}")
-                logger.info(f"Matches: {matches}")
-                # Take the first match (usually the most recent quarter), get rid of commas 94,036 -> 94036
-                # POTENTIAL CAVEAT: only first match is taken, could be wrong if multiple matches
-                revenue_str = matches[0].replace(',', '')
-                try:
-                    revenue_value = float(revenue_str)
-                    if 'million' in pattern or 'Total net sales' in pattern:
-                        result = revenue_value * 1e6  # Convert millions to dollars
-                        logger.info(f"Extracted revenue: ${revenue_value}M = ${result/1e9:.2f}B")
-                        return result
-                    else:
-                        result = revenue_value * 1e9  # Convert billions to dollars
-                        logger.info(f"Extracted revenue: ${revenue_value}B = ${result/1e9:.2f}B")
-                        return result
-                except ValueError:
-                    logger.warning(f"Could not parse revenue value: {revenue_str}")
-                    continue
-        
-        return 0
-    
-   
-    

@@ -114,7 +114,7 @@ class GeminiClient:
             # Fallback summary
             fallback = f"Analysis for query: '{user_query}'\n\n"
             fallback += f"Based on {len(kpis)} key metrics and {len(sources)} relevant documents. "
-            fallback += "Key metrics include revenue, net income, and cash position. "
+            fallback += "Key metrics include net income, EPS, cash position, and debt levels. "
             fallback += f"\n\n⚠️ **Note**: AI analysis unavailable due to API error: {str(e)[:100]}..."
             fallback += "Please refer to the source documents for detailed analysis."
             return fallback

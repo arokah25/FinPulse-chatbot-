@@ -70,7 +70,7 @@ python app/gradio_app.py
 
 ### Key Features
 
--  **Automated KPI Extraction**: Revenues, Net Income, EPS, Cash, Debt
+-  **Automated KPI Extraction**: Net Income, EPS, Cash, Debt
 -  **RAG-Powered Analysis**: Retrieves relevant context from SEC filings
 -  **AI-Generated Insights**: Professional financial summaries with citations
 -  **Web Interface**: Interactive Gradio-based UI
@@ -126,6 +126,13 @@ make quick-test
 - **Not Investment Advice**: For informational purposes only
 - **Data Lag**: SEC filings may have reporting delays
 - **API Dependencies**: Requires stable internet connection
+- **Revenue Data**: Currently excluded due to inconsistent reporting formats across companies and unreliable extraction methods
+
+### Future Improvements
+- **Revenue Integration**: Implement robust revenue extraction with better pattern matching and validation
+- **Enhanced KPIs**: Add more financial metrics like operating income, EBITDA, and cash flow
+- **Dense Embeddings**: Upgrade from keyword-based to semantic search for better retrieval
+- **Multi-Form Support**: Extend beyond 10-Q to include 10-K annual reports
 
 ## License
 
@@ -134,7 +141,7 @@ MIT License © 2025 FinPulse Team
 ## Team
 
 - **Adam Rokah**
-- **Christoff Armann**
+- **Christoph Armann**
 - **Lavy Selvaraj**
 
 ---
