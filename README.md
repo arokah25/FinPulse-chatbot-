@@ -47,7 +47,7 @@ python app/gradio_app.py
 - ** Data Ingestion** (`src/finpulse/ingest/`)
   - SEC EDGAR API client
   - Company ticker → CIK mapping
-  - Financial KPI extraction
+  - Financial KPI extraction from most recent 10-Q
 
 - ** RAG Pipeline** (`src/finpulse/rag/`)
   - Document chunking and indexing
@@ -118,7 +118,7 @@ make quick-test
 ## Important Notes
 
 ### Data Sources
-- **SEC EDGAR**: Official SEC filings (10-Q quarterly reports)
+- **SEC EDGAR**: Official SEC filings (most recent 10-Q quarterly report)
 - **Real-time**: Always fetches latest available data
 - **Transparency**: All sources are cited with direct links
 
