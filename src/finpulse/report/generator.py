@@ -86,10 +86,10 @@ class ReportGenerator:
             if not kpis:
                 logger.warning(f"No KPIs found for {ticker}")
             
-            # Step 3: Get latest filings
-            logger.info(f"Fetching latest {form_type} filings...")
-            #get latest 3 quarterly filings
-            filings = self.edgar_client.get_latest_filings(cik, form_type, limit=3)
+            # Step 3: Get latest filing
+            logger.info(f"Fetching latest {form_type} filing...")
+            #get latest quarterly filing
+            filings = self.edgar_client.get_latest_filings(cik, form_type, limit=1)
             
             # Build sources from filings for display
             def helper_build_url_from_filings(cik: str, accession_number: str, primary_document: str) -> str:
